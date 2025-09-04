@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Multiplication Flash Cards (0–12)</title>
+  <style>
+    :root {
+      --flip-ms: 200ms;
+      --slide-ms: 300ms;
+      --bg: #f9fafb;
+      --ink: #111827;
+      --muted: #374151;
+    }
+    html, body {
+      height: 100%;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .stage {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    .card-wrap {
+      perspective: 1400px;
+      width: min(90vw, 680px);
+      height: min(60vh, 420px);
+      max-width: 800px;
+      position: relative;
+    }
+    .card {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform var(--flip-ms) ease-in-out, left var(--slide-ms) ease-in-out;
+      border-radius: 28px;
+      box-shadow: 0 10px 40px rgba(0,0,0,.2);
+      left: 0;
+    }
+    .card.flipped { transform: rotateY(180deg); }
+
+    .face {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      align-items: center;
+      justify-items: center;
+      backface-visibility: hidden;
+      border-radius: 28px;
+      padding: clamp(12px, 2.5vmin, 28px);
+      color: white;
+    }
+    .back { transform: rotateY(180deg); }
+
+    .problem, .answer {
+      font-weight: 800;
+      letter-spacing: .02em;
+      text-align: center;
+      line-height: 1.05;
+    }
+    .problem { font-size: clamp(48px, 14vmin, 140px); }
+    .answer { font-size: clamp(64px, 18vmin, 180px); }
+
+    .hint {
+      font-size: clamp(12px, 1.9vmin, 14px);
+      opacity: .9;
+      color: white;
+    }
+
+    .chip-row { display: flex; gap: 10px; align-items: center; }
+    .chip { border: 1px solid rgba(255,255,255,.3); padding: 6px 10px; border-radius: 999px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="stage" id="stage" aria-label="Flash card area" role="button" tabindex="0">
+    <div class="card-wrap" id="cardWrap">
+      <div class="card" id="card">
+        <div class="face front" id="front">
+          <div class="problem" id="problem">4 × 6</div>
+          <div class="hint">
+            <div class="chip-row">
+              <div class="chip">Tap / Click to reveal</div>
+            </div>
+          </div>
+        </div>
+        <div class="face back" id="back">
+          <div class="answer" id="answer">24</div>
+          <div class="hint">
+            <div class="chip-row">
+              <div class="chip">Tap / Click for next</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const MIN = 0;
+    const MAX = 12;
+    const FLIP_MS = 200;
+    const SLIDE_MS = 300;
+
+    let a = 0, b = 0;
+    let showingAnswer = false;
+
+    const problemEl = document.getElementById('problem');
+    const answerEl  = document.getElementById('answer');
+    const cardWrapEl = document.getElementById('cardWrap');
+    const stageEl   = document.getElementById('stage');
+    const frontEl   = document.getElementById('front');
+    const backEl    = document.getElementById('back');
+
+    const colors = ["#1e3a8a", "#2563eb", "#047857", "#b91c1c", "#7c3aed", "#92400e"];
+
+    function randInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function randomColor() {
+      return colors[randInt(3, colors.length-1)];
+    }
+
+    function newProblem() {
+      a = randInt(MIN, MAX);
+      b = randInt(MIN, MAX);
+      problemEl.textContent = `${a} × ${b}`;
+      answerEl.textContent  = String(a * b);
+      const color = randomColor();
+      frontEl.style.background = color;
+      backEl.style.background  = color;
+    }
+
+    function flipToAnswer() {
+      showingAnswer = true;
+      document.getElementById('card').classList.add('flipped');
+    }
+
+    function showNextProblem() {
+      showingAnswer = false;
+      const oldCard = document.getElementById('card');
+      oldCard.style.left = "0";
+      requestAnimationFrame(() => {
+        oldCard.style.left = "100%";
+      });
+
+      const newCard = oldCard.cloneNode(true);
+      newCard.id = "card";
+      newCard.classList.remove('flipped');
+      newCard.style.left = "-100%";
+
+      cardWrapEl.appendChild(newCard);
+
+      newProblem();
+      newCard.querySelector('#problem').textContent = `${a} × ${b}`;
+      newCard.querySelector('#answer').textContent  = String(a * b);
+      const color = randomColor();
+      newCard.querySelector('#front').style.background = color;
+      newCard.querySelector('#back').style.background  = color;
+
+      requestAnimationFrame(() => {
+        newCard.style.left = "0";
+      });
+
+      setTimeout(() => {
+        cardWrapEl.removeChild(oldCard);
+      }, SLIDE_MS);
+    }
+
+    function handlePrimaryAction() {
+      const cardEl = document.getElementById('card');
+      if (!showingAnswer) {
+        flipToAnswer();
+      } else {
+        showNextProblem();
+      }
+    }
+
+    stageEl.addEventListener('click', handlePrimaryAction);
+    stageEl.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' || e.code === 'Enter') {
+        e.preventDefault();
+        handlePrimaryAction();
+      }
+    });
+
+    newProblem();
+    window.addEventListener('load', () => stageEl.focus({preventScroll:true}));
+    window.addEventListener('contextmenu', (e) => e.preventDefault());
+  </script>
+</body>
+</html>
