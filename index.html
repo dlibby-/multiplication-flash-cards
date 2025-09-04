@@ -113,7 +113,7 @@
   </div>
 
   <script>
-    const MIN = 0;
+    const MIN = 3;
     const MAX = 12;
     const FLIP_MS = 200;
     const SLIDE_MS = 300;
@@ -135,7 +135,7 @@
     }
 
     function randomColor() {
-      return colors[randInt(3, colors.length-1)];
+      return colors[randInt(0, colors.length-1)];
     }
 
     function newProblem() {
